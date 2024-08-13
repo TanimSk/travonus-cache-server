@@ -1,15 +1,16 @@
-from requests.auth import HTTPBasicAuth
 from django.conf import settings
 import requests
 import base64
 
 import redis
-from redis.commands.json.path import Path
-from redis.commands.search.field import TextField, NumericField, TagField
-from redis.commands.search.indexDefinition import IndexDefinition, IndexType
 
-# import json
+# from redis.commands.json.path import Path
+# from redis.commands.search.field import TextField, NumericField, TagField
+# from redis.commands.search.indexDefinition import IndexDefinition, IndexType
+# from requests.auth import HTTPBasicAuth
 
+
+# Result caching
 
 redis_client = redis.StrictRedis(
     host=settings.REDIS_HOST,
@@ -42,8 +43,13 @@ def call_external_api(
     headers = kwargs.get("headers", {})
     headers["Content-Type"] = headers.get("Content-Type", "application/json")
     headers["Proxy-Authorization"] = f"Basic {proxy_auth}"
+
+    print("-------------------------------------")
+    print(url)
+    print(headers)
     print(proxies)
     print(data)
+    print("-------------------------------------")
 
     try:
         if method == "POST":
@@ -102,3 +108,68 @@ def remove_all_flights() -> int:
         redis_client.delete(*flight_keys)
 
     return len(flight_keys)
+
+
+ALL_AIRLINES = [
+    ("BZL", "CGP"),
+    ("BZL", "CXB"),
+    ("BZL", "DAC"),
+    ("BZL", "JSR"),
+    ("BZL", "RJH"),
+    ("BZL", "SPD"),
+    ("CGP", "BZL"),
+    ("CGP", "CXB"),
+    ("CGP", "DAC"),
+    ("CGP", "JSR"),
+    ("CGP", "RJH"),
+    ("CGP", "SPD"),
+    ("CXB", "BZL"),
+    ("CXB", "CGP"),
+    ("CXB", "DAC"),
+    ("CXB", "JSR"),
+    ("CXB", "RJH"),
+    ("CXB", "SPD"),
+    ("DAC", "BZL"),
+    ("DAC", "CGP"),
+    ("DAC", "CXB"),
+    ("DAC", "JSR"),
+    ("DAC", "RJH"),
+    ("DAC", "SPD"),
+    ("JSR", "BZL"),
+    ("JSR", "CGP"),
+    ("JSR", "CXB"),
+    ("JSR", "DAC"),
+    ("JSR", "RJH"),
+    ("JSR", "SPD"),
+    ("RJH", "BZL"),
+    ("RJH", "CGP"),
+    ("RJH", "CXB"),
+    ("RJH", "DAC"),
+    ("RJH", "JSR"),
+    ("RJH", "SPD"),
+    ("SPD", "BZL"),
+    ("SPD", "CGP"),
+    ("SPD", "CXB"),
+    ("SPD", "DAC"),
+    ("SPD", "JSR"),
+    ("SPD", "RJH"),
+]
+
+
+def get_search_payload(origin: str, destination: str, departure_date: str) -> dict:
+    return {
+        "adult_quantity": 3,
+        "child_quantity": 0,
+        "child_age": 0,
+        "infant_quantity": 0,
+        "user_ip": "192.46.211.211",
+        "journey_type": "Oneway",
+        "booking_class": "Economy",
+        "segments": [
+            {
+                "origin": origin,
+                "destination": destination,
+                "departure_date": departure_date,
+            }
+        ],
+    }

@@ -24,7 +24,7 @@ class Command(BaseCommand):
             decode_responses=True,
         )
 
-        index_name = "idx"
+        index_name = "result_cache_idx"
 
         if kwargs["remove"]:
             try:
@@ -36,7 +36,7 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.ERROR(f"Error removing index: {e}"))
         else:
             try:
-                redis_client.ft().create_index(
+                redis_client.ft(index_name).create_index(
                     # Schema
                     (
                         NumericField("$.total_fare", as_name="total_fare"),
@@ -45,7 +45,7 @@ class Command(BaseCommand):
                         TextField(
                             "$.meta_data.segments[0].destination", as_name="destination"
                         ),
-                        TextField(
+                        TagField(
                             "$.meta_data.segments[0].departure_date",
                             as_name="departure_date",
                         ),
