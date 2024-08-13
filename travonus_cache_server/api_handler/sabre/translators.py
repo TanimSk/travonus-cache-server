@@ -5,7 +5,6 @@ import json
 import xml.etree.ElementTree as ET
 from api_handler.sabre import create_session
 from api_handler.models import SessionToken
-
 #########
 # Sabre #
 #########
@@ -276,7 +275,7 @@ def search_result_translate(results: dict, search_params: dict):
 
     translated_results = []
     # pretty print results
-    print(json.dumps(results, indent=4))
+    # print(json.dumps(results, indent=4))
 
     if (
         results is None

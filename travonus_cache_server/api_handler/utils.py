@@ -1,7 +1,7 @@
 from django.conf import settings
+from django.utils import timezone
 import requests
 import base64
-
 import redis
 
 # from redis.commands.json.path import Path
@@ -44,12 +44,12 @@ def call_external_api(
     headers["Content-Type"] = headers.get("Content-Type", "application/json")
     headers["Proxy-Authorization"] = f"Basic {proxy_auth}"
 
-    print("-------------------------------------")
-    print(url)
-    print(headers)
-    print(proxies)
-    print(data)
-    print("-------------------------------------")
+    # print("-------------------------------------")
+    # print(url)
+    # print(headers)
+    # print(proxies)
+    # print(data)
+    # print("-------------------------------------")
 
     try:
         if method == "POST":
@@ -76,12 +76,12 @@ def call_external_api(
         if response.status_code == 200:
 
             if "application/json" in response.headers.get("content-type"):
-                print("-------------------------------------\n", response.json())
+                # print("-------------------------------------\n", response.json())
                 return response.json()
 
             return response.text
         else:
-            print("-------------------------------------\n", response.text)
+            # print("-------------------------------------\n", response.text)
             return None
 
     except requests.RequestException as e:
@@ -92,9 +92,11 @@ def call_external_api(
 def store_in_redis(data: dict) -> None:
     count = 0
 
+    # get time in milliseconds
+    time = int(timezone.now().timestamp() * 1000)
     for entry in data:
         count += 1
-        redis_client.json().set(f"flight_cache:{count}", "$", entry)
+        redis_client.json().set(f"flight_cache:{time+count}", "$", entry)
 
     print("stored ", count)
 

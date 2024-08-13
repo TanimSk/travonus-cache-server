@@ -70,7 +70,7 @@ def air_search(search_params: dict):
     body = air_search_translate(search_params=search_params)
 
     # pretty print json
-    print(json.dumps(body, indent=4))
+    # print(json.dumps(body, indent=4))
 
     token = ApiCredentials.objects.get(api_name="sabre").token
     api_response = call_external_api(
@@ -82,8 +82,8 @@ def air_search(search_params: dict):
     )
 
     # create a thread for calling `create_session` function
-    create_session_thread = threading.Thread(target=create_session)
-    create_session_thread.start()
+    # create_session_thread = threading.Thread(target=create_session)
+    # create_session_thread.start()
 
     return search_result_translate(api_response, search_params)
 
