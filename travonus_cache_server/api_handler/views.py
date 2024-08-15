@@ -80,6 +80,12 @@ class CacheAirSearch(APIView):
             return JsonResponse(result, safe=False)
 
 
+class ClearCacheAPI(APIView):
+    def post(self, request, format=None, *args, **kwargs):
+        remove_all_flights()
+        return JsonResponse({"message": "Cache cleared"}, safe=False)
+
+
 class FareRules(APIView):
     # TODO: implement serializer later
     # serializer_class = AirRulesSerializer
