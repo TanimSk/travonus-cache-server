@@ -50,7 +50,7 @@ class CacheAirSearch(APIView):
 
             query_str = f"@origin:{serialized_data.data['segments'][0]['origin']} \
             @destination:{serialized_data.data['segments'][0]['destination']} \
-            @departure_date:{{{serialized_data.data['segments'][0]['departure_date'].replace('-', '\\-')}}}"
+            @departure_date:{{{serialized_data.data['segments'][0]['departure_date'].replace('-', '-')}}}"
 
             # filter by refundable
             if (
