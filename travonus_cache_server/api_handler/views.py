@@ -48,10 +48,16 @@ class CacheAirSearch(APIView):
             result = []
             index_name = "result_cache_idx"
 
+            origin = serialized_data.data["segments"][0]["origin"]
+            destination = serialized_data.data["segments"][0]["destination"]
+            departure_date = serialized_data.data["segments"][0][
+                "departure_date"
+            ].replace("-", "\\-")
+
             query_str = (
-                f"@origin:{serialized_data.data['segments'][0]['origin']} "
-                f"@destination:{serialized_data.data['segments'][0]['destination']} "
-                f"@departure_date:{{{serialized_data.data['segments'][0]['departure_date'].replace('-', r'\-')}}}"
+                f"@origin:{origin} "
+                f"@destination:{destination} "
+                f"@departure_date:{{{departure_date}}}"
             )
 
             # filter by refundable
