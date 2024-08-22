@@ -78,7 +78,7 @@ crontab_schedule, _ = CrontabSchedule.objects.get_or_create(
 periodic_task_instance = PeriodicTask.objects.get_or_create(
     name="Store in Cache",
     task="api_handler.tasks.store_in_cache",
-    # crontab=crontab_schedule,
+    crontab=crontab_schedule,
 )
-periodic_task_instance[0].crontab = crontab_schedule
-periodic_task_instance[0].save()
+# periodic_task_instance[0].crontab = crontab_schedule
+# periodic_task_instance[0].save()
