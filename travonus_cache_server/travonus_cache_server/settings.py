@@ -29,7 +29,7 @@ SECRET_KEY = "django-insecure-qj8y3i9@_)6=0nni=2n7il^ig(rvu+9n(bt4z7qx!2n#+vrhaj
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
-CSRF_TRUSTED_ORIGINS = ["https://little-sloth-42.telebit.io"]
+CSRF_TRUSTED_ORIGINS = ["https://travonus-cache-api.ongshak.com"]
 # CORS Settings
 CORS_ALLOW_ALL_ORIGINS = True
 # Update this in production
