@@ -34,7 +34,7 @@ class CacheAirSearch(APIView):
 
     def convert_to_json(self, results):
         flights = []
-        for doc in results.docs:            
+        for doc in results.docs:
             flight = redis_client.json().get(doc.id)
             flights.append(flight)
 
@@ -48,9 +48,11 @@ class CacheAirSearch(APIView):
             result = []
             index_name = "result_cache_idx"
 
-            query_str = f"@origin:{serialized_data.data['segments'][0]['origin']} \
-            @destination:{serialized_data.data['segments'][0]['destination']} \
-            @departure_date:{{{serialized_data.data['segments'][0]['departure_date'].replace('-', '\-')}}}"
+            query_str = (
+                f"@origin:{serialized_data.data['segments'][0]['origin']} "
+                f"@destination:{serialized_data.data['segments'][0]['destination']} "
+                f"@departure_date:{{{serialized_data.data['segments'][0]['departure_date'].replace('-', r'\-')}}}"
+            )
 
             # filter by refundable
             if (
