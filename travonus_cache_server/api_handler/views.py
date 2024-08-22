@@ -19,9 +19,9 @@ from api_handler.serializers import AirSearchSerializer, AirRulesSerializer
 # from api_handler.bdfare.api import air_search as bdfare_air_search
 
 # 2. Rules
-from api_handler.bdfare.api import air_rules as bdfare_air_rules
-from api_handler.flyhub.api import air_rules as flyhub_air_rules
-from api_handler.sabre.api import air_rules as sabre_air_rules
+# from api_handler.bdfare.api import air_rules as bdfare_air_rules
+# from api_handler.flyhub.api import air_rules as flyhub_air_rules
+# from api_handler.sabre.api import air_rules as sabre_air_rules
 
 # 3. Pricing Details
 from api_handler.bdfare.api import pricing_details as bdfare_pricing_details
@@ -34,8 +34,7 @@ class CacheAirSearch(APIView):
 
     def convert_to_json(self, results):
         flights = []
-        for doc in results.docs:
-            # Assuming each doc has an id that can be used to retrieve the full JSON document
+        for doc in results.docs:            
             flight = redis_client.json().get(doc.id)
             flights.append(flight)
 
@@ -51,7 +50,7 @@ class CacheAirSearch(APIView):
 
             query_str = f"@origin:{serialized_data.data['segments'][0]['origin']} \
             @destination:{serialized_data.data['segments'][0]['destination']} \
-            @departure_date:{{{serialized_data.data['segments'][0]['departure_date'].replace('-', '\-')}}}"
+            @departure_date:{{{serialized_data.data['segments'][0]['departure_date'].replace('-', '\\-')}}}"
 
             # filter by refundable
             if (
@@ -86,30 +85,8 @@ class ClearCacheAPI(APIView):
         return JsonResponse({"message": "Cache cleared"}, safe=False)
 
 
-class FareRules(APIView):
-    # TODO: implement serializer later
-    # serializer_class = AirRulesSerializer
-
-    def post(self, request, format=None, *args, **kwargs):
-        # serialized_data = self.serializer_class(data=request.data)
-
-        # if serialized_data.is_valid(raise_exception=True):
-
-        # get post request body
-        serialized_data = request
-
-        if serialized_data.data["api_name"] == "bdfare":
-            result = bdfare_air_rules(serialized_data.data)
-        elif serialized_data.data["api_name"] == "flyhub":
-            result = flyhub_air_rules(serialized_data.data)
-        elif serialized_data.data["api_name"] == "sabre":
-            result = sabre_air_rules(serialized_data.data)
-
-        return JsonResponse(result, safe=False)
-
-
 class PricingDetails(APIView):
-    serializer_class = AirRulesSerializer
+    # serializer_class = AirRulesSerializer
 
     def post(self, request, format=None, *args, **kwargs):
         # serialized_data = self.serializer_class(data=request.data)
@@ -126,21 +103,3 @@ class PricingDetails(APIView):
             result = sabre_pricing_details(serialized_data.data)
 
         return JsonResponse(result, safe=False)
-
-
-class PricingCalendar(APIView):
-    def get(self, request, format=None, *args, **kwargs):
-        if request.GET.get("origin") and request.GET.get("destination"):
-            token = ApiCredentials.objects.get(api_name="sabre").token
-            api_response = call_external_api(
-                f"{urls.CALENDAR_SEARCH}?origin={request.GET.get('origin')}&destination={request.GET.get('destination')}&lengthofstay=7",
-                method="GET",
-                headers={"Authorization": f"Bearer {token}"},
-                ssl=False,
-            )
-
-            return JsonResponse(api_response, safe=False)
-
-        return JsonResponse(
-            {"error": "origin and destination are required"}, safe=False, status=400
-        )

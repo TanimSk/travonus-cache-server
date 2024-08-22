@@ -81,7 +81,7 @@ def call_external_api(
 
             return response.text
         else:
-            # print("-------------------------------------\n", response.text)
+            print("-------------------------------------\n", response.text)
             return None
 
     except requests.RequestException as e:
@@ -110,6 +110,27 @@ def remove_all_flights() -> int:
         redis_client.delete(*flight_keys)
 
     return len(flight_keys)
+
+
+def get_best_match_flight(results: list, target: dict) -> dict:
+    # parameters: segments, refundable, total_fare, departure_datetime
+
+    # filter segments and refundable
+    filtered_results1 = []
+    for result in results:
+        if (
+            len(result["segments"]) == len(target["segments"])
+            and result["is_refundable"] == target["is_refundable"]
+        ):
+            filtered_results1.append(result)
+
+    # filter closest total_fare
+    filtered_results1 = sorted(filtered_results1, key=lambda x: x.get("total_fare", 0))
+
+    for result in filtered_results1:
+        # return the first match (greater than or equal to target)
+        if result["total_fare"] >= target["total_fare"]:
+            return result
 
 
 ALL_AIRLINES = [
@@ -160,7 +181,7 @@ ALL_AIRLINES = [
 
 def get_search_payload(origin: str, destination: str, departure_date: str) -> dict:
     return {
-        "adult_quantity": 3,
+        "adult_quantity": 1,
         "child_quantity": 0,
         "child_age": 0,
         "infant_quantity": 0,

@@ -40,9 +40,9 @@ def store_in_cache():
             # Threading requests
             with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
                 futures = [
-                    # executor.submit(bdfare_air_search, search_payload),
+                    executor.submit(bdfare_air_search, search_payload),
                     executor.submit(sabre_air_search, search_payload),
-                    # executor.submit(flyhub_air_search, search_payload),
+                    executor.submit(flyhub_air_search, search_payload),
                 ]
 
                 for future in concurrent.futures.as_completed(futures):
@@ -61,21 +61,24 @@ schedule, _ = IntervalSchedule.objects.get_or_create(
 )
 
 # Schedule the periodic task programmatically
-PeriodicTask.objects.get_or_create(
+periodic_task_instance = PeriodicTask.objects.get_or_create(
     name="Update Token",
     task="api_handler.tasks.update_token",
     interval=schedule,
 )
 
+# Schedule the periodic task programmatically
 crontab_schedule, _ = CrontabSchedule.objects.get_or_create(
-    minute='02',
-    hour='15',
-    day_of_week='*',
-    day_of_month='*',
-    month_of_year='*',
+    hour="17",
+    minute="00",
+    day_of_week="*",
+    day_of_month="*",
+    month_of_year="*",
 )
-PeriodicTask.objects.get_or_create(
+periodic_task_instance = PeriodicTask.objects.get_or_create(
     name="Store in Cache",
     task="api_handler.tasks.store_in_cache",
-    crontab=crontab_schedule,
+    # crontab=crontab_schedule,
 )
+periodic_task_instance[0].crontab = crontab_schedule
+periodic_task_instance[0].save()
