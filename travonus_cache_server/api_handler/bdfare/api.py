@@ -49,7 +49,10 @@ def pricing_details(pricing_params: dict):
     """
 
     results = air_search(pricing_params["meta_data"])
+    print(results)
+
     best_match_flight = get_best_match_flight(results, pricing_params)
+    print(best_match_flight)
 
     body = air_pricing_details_inject_translate(pricing_params=best_match_flight)
     print(json.dumps(body, indent=4))
