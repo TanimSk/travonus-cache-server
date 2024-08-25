@@ -44,11 +44,11 @@ def call_external_api(
     headers["Content-Type"] = headers.get("Content-Type", "application/json")
     headers["Proxy-Authorization"] = f"Basic {proxy_auth}"
 
-    # print("-------------------------------------")
-    # print(url)
-    # print(headers)
-    # print(proxies)
-    # print(data)
+    print("-----------------PAYLOAD--------------------\n")
+    print(url)
+    print(headers)
+    print(proxies)
+    print(data)
     # print("-------------------------------------")
 
     try:
@@ -76,12 +76,12 @@ def call_external_api(
         if response.status_code == 200:
 
             if "application/json" in response.headers.get("content-type"):
-                # print("-------------------------------------\n", response.json())
+                print("-----------------RESPONSE--------------------\n", response.json())
                 return response.json()
 
             return response.text
         else:
-            print("-------------------------------------\n", response.text)
+            print("------------------ERROR-------------------\n", response.text)
             return None
 
     except requests.RequestException as e:
