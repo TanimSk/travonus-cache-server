@@ -42,7 +42,7 @@ def store_in_cache():
                 futures = [
                     executor.submit(bdfare_air_search, search_payload),
                     executor.submit(sabre_air_search, search_payload),
-                    executor.submit(flyhub_air_search, search_payload),
+                    # executor.submit(flyhub_air_search, search_payload),
                 ]
 
                 for future in concurrent.futures.as_completed(futures):
