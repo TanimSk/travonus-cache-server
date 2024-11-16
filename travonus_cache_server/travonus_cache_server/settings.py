@@ -89,7 +89,7 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "travonus_cache",
-        "USER": "tanimsk",
+        "USER": "ongshak",
         "PASSWORD": "123",
         "HOST": "localhost",
         "PORT": "",
