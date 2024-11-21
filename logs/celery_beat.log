@@ -1,0 +1,91 @@
+celery beat v5.4.0 (opalescent) is starting.
+Traceback (most recent call last):
+  File "/home/ongshak/Travonus-cache-server/venv/bin/celery", line 8, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/celery/__main__.py", line 15, in main
+    sys.exit(_main())
+             ^^^^^^^
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/celery/bin/celery.py", line 236, in main
+    return celery(auto_envvar_prefix="CELERY")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/click/core.py", line 1157, in __call__
+    return self.main(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/click/core.py", line 1078, in main
+    rv = self.invoke(ctx)
+         ^^^^^^^^^^^^^^^^
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/click/core.py", line 1688, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/click/core.py", line 1434, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/click/core.py", line 783, in invoke
+    return __callback(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/click/decorators.py", line 33, in new_func
+    return f(get_current_context(), *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/celery/bin/base.py", line 135, in caller
+    return f(ctx, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/celery/bin/beat.py", line 72, in beat
+    return beat().run()
+           ^^^^^^^^^^^^
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/celery/apps/beat.py", line 82, in run
+    self.init_loader()
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/celery/apps/beat.py", line 132, in init_loader
+    self.app.loader.init_worker()
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/celery/loaders/base.py", line 110, in init_worker
+    self.import_default_modules()
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/celery/loaders/base.py", line 104, in import_default_modules
+    raise response
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/celery/utils/dispatch/signal.py", line 276, in send
+    response = receiver(signal=self, sender=sender, **named)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/vine/promises.py", line 161, in __call__
+    return self.throw()
+           ^^^^^^^^^^^^
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/vine/promises.py", line 158, in __call__
+    retval = fun(*final_args, **final_kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/celery/app/base.py", line 694, in _autodiscover_tasks
+    return self._autodiscover_tasks_from_fixups(related_name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/celery/app/base.py", line 703, in _autodiscover_tasks_from_fixups
+    return self._autodiscover_tasks_from_names([
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/celery/app/base.py", line 698, in _autodiscover_tasks_from_names
+    return self.loader.autodiscover_tasks(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/celery/loaders/base.py", line 220, in autodiscover_tasks
+    mod.__name__ for mod in autodiscover_tasks(packages or (),
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/celery/loaders/base.py", line 246, in autodiscover_tasks
+    return [find_related_module(pkg, related_name) for pkg in packages]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/celery/loaders/base.py", line 270, in find_related_module
+    return importlib.import_module(module_name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/home/ongshak/Travonus-cache-server/travonus_cache_server/api_handler/tasks.py", line 79, in <module>
+    crontab_schedule, _ = CrontabSchedule.objects.get_or_create(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/django/db/models/manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/django/db/models/query.py", line 916, in get_or_create
+    return self.get(**kwargs), False
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/ongshak/Travonus-cache-server/venv/lib/python3.12/site-packages/django/db/models/query.py", line 640, in get
+    raise self.model.MultipleObjectsReturned(
+django_celery_beat.models.CrontabSchedule.MultipleObjectsReturned: get() returned more than one CrontabSchedule -- it returned 2!

@@ -54,20 +54,28 @@ def store_in_cache():
             print(f"result: {len(result)}")
             store_in_redis(result)
 
-
+# --------------- for updating the tokens ---------------
 schedule, _ = IntervalSchedule.objects.get_or_create(
     every=5,
     period=IntervalSchedule.DAYS,
 )
 
 # Schedule the periodic task programmatically
-periodic_task_instance = PeriodicTask.objects.get_or_create(
+periodic_task_instance, created = PeriodicTask.objects.get_or_create(
     name="Update Token",
-    task="api_handler.tasks.update_token",
-    interval=schedule,
+    defaults={
+        'task': "api_handler.tasks.update_token",
+        'interval': schedule,
+    }
 )
 
-# Schedule the periodic task programmatically
+# If the task already exists, you may want to update it
+if not created:
+    periodic_task_instance.interval = schedule
+    periodic_task_instance.task = "api_handler.tasks.update_token"
+    periodic_task_instance.save()
+
+# --------------- for storing flight results in cache ---------------
 crontab_schedule, _ = CrontabSchedule.objects.get_or_create(
     hour="17",
     minute="00",
@@ -75,10 +83,18 @@ crontab_schedule, _ = CrontabSchedule.objects.get_or_create(
     day_of_month="*",
     month_of_year="*",
 )
-periodic_task_instance = PeriodicTask.objects.get_or_create(
+
+# Schedule the periodic task programmatically
+cache_task_instance, created = PeriodicTask.objects.get_or_create(
     name="Store in Cache",
-    task="api_handler.tasks.store_in_cache",
-    crontab=crontab_schedule,
+    defaults={
+        'task': "api_handler.tasks.store_in_cache",
+        'crontab': crontab_schedule,
+    }
 )
-# periodic_task_instance[0].crontab = crontab_schedule
-# periodic_task_instance[0].save()
+
+# If the task already exists, update it
+if not created:
+    cache_task_instance.crontab = crontab_schedule
+    cache_task_instance.task = "api_handler.tasks.store_in_cache"
+    cache_task_instance.save()

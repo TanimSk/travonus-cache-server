@@ -24,7 +24,7 @@ def call_external_api(
     url: str, data=None, ssl=True, method="POST", content: str = "json", **kwargs
 ):
     # remove this on production
-    proxy = "192.46.211.211:3128"
+    proxy = f"{settings.PROXY_SERVER_IP}:3128"
     proxy_auth = base64.b64encode(
         f"{settings.PROXY_SERVER_USERNAME}:{settings.PROXY_SERVER_PASSWORD}".encode()
     ).decode()
