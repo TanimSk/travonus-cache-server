@@ -29,7 +29,7 @@ SECRET_KEY = "django-insecure-qj8y3i9@_)6=0nni=2n7il^ig(rvu+9n(bt4z7qx!2n#+vrhaj
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
-CSRF_TRUSTED_ORIGINS = ["https://travonus-cache-api.ongshak.com"]
+CSRF_TRUSTED_ORIGINS = ["https://travonus-cache-api.ongshak.com", "http://localhost:50374/"]
 # CORS Settings
 CORS_ALLOW_ALL_ORIGINS = True
 # Update this in production
@@ -39,6 +39,7 @@ X_FRAME_OPTIONS = "ALLOWALL"
 # Application definition
 
 INSTALLED_APPS = [
+    "corsheaders",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -52,6 +53,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
