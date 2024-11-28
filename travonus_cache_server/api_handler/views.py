@@ -3,6 +3,7 @@ from django.http import JsonResponse
 import concurrent.futures
 
 # from django.conf import settings
+from administrator.models import MobileAdminInfo
 from redis.commands.search.query import Query
 from api_handler.utils import store_in_redis, redis_client, remove_all_flights
 from api_handler.models import ApiCredentials
@@ -99,15 +100,16 @@ class PricingDetails(APIView):
     def post(self, request, format=None, *args, **kwargs):
         # serialized_data = self.serializer_class(data=request.data)
         # if serialized_data.is_valid(raise_exception=True):
+        admin_markup = MobileAdminInfo.objects.first().admin_markup
 
         serialized_data = request
         result = []
 
         if serialized_data.data["api_name"] == "bdfare":
-            result = bdfare_pricing_details(serialized_data.data)
+            result = bdfare_pricing_details(serialized_data.data, admin_markup)
         elif serialized_data.data["api_name"] == "flyhub":
-            result = flyhub_pricing_details(serialized_data.data)
+            result = flyhub_pricing_details(serialized_data.data, admin_markup)
         elif serialized_data.data["api_name"] == "sabre":
-            result = sabre_pricing_details(serialized_data.data)
+            result = sabre_pricing_details(serialized_data.data, admin_markup)
 
         return JsonResponse(result, safe=False)
