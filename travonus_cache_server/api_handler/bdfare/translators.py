@@ -1,6 +1,10 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from dateutil import parser
-import time
+from decimal import Decimal
+from api_handler.constants import IATA_AIRPORT_CODE_MAP, AIRPORT_TO_GMT
+from django.db.models import QuerySet
+from api_handler.utils import get_total_fare_with_markup
+
 
 ##########
 # BDfare #
@@ -109,6 +113,7 @@ def air_search_translate(search_params: dict):
                     "cabinCode": booking_class_map[search_params["booking_class"]],
                 },
                 "returnUPSellInfo": True,
+                "preferCombine": True,
             },
         },
     }
@@ -126,32 +131,110 @@ def air_search_translate(search_params: dict):
     return translated_search_params
 
 
-def search_result_translate(results: dict, search_params: dict):
+def process_search_result(
+    results: dict,
+    search_params: dict,
+    trace_id: str = None,
+    admin_markup: Decimal = None,
+    agent_markup_instance=None,
+):
+    # validation
+    if (
+        results is None
+        or results.get("response") is None
+        or (
+            (
+                (
+                    type(results["response"].get("offersGroup")) is list
+                    and len(results["response"]["offersGroup"]) == 0
+                )
+                or results["response"].get("offersGroup") is None
+            )
+            and (
+                (
+                    type(results["response"].get("specialReturnOffersGroup")) is list
+                    and len(results["response"]["specialReturnOffersGroup"]) == 0
+                )
+                or results["response"].get("specialReturnOffersGroup") is None
+            )
+        )
+    ):
+        return []
+
+    return search_result_translate(
+        results=results["response"]["offersGroup"],
+        search_params=search_params,
+        search_id=results["response"]["traceId"],
+        trace_id=trace_id,
+        admin_markup=admin_markup,
+        agent_markup_instance=agent_markup_instance,
+    )
+
+
+def search_result_translate(
+    results: list,
+    search_params: dict,
+    direction: str = None,
+    search_id: str = None,
+    trace_id: str = None,
+    admin_markup: Decimal = None,
+    agent_markup_instance=None,
+):
 
     # translated to:
     """
     [
         {
+            trace_id: "cd0cd824-c...",
             api_name: "",
             search_id: "",
             result_id: "",
             is_refundable: False,
             seats_available: 1,
+
+            only_admin_markup: 50,
+            only_agent_markup: 50,
+            base_price: 1100,
+            price_with_admin_markup: 1150,
             total_fare: 1200,
 
+            "first_departure_time": 0,
+            "final_arrival_time": 0,
+            duration: 2423,
+            inbound_stops: 0,
+            outbound_stops: 0,
+
             validating_carrier: "UK",
+            airlines: ["UK", "BG"],
 
             segments: [
             {
+                // added
+                direction: "outbound", // or inbound
                 origin: {
                     airport_code: "DAC",
+                    full_name: "Dhaka",
                     terminal: "",
-                    departure_time: "2024-07-20T11:45:00",
+                    departure_time: 1626163200,
+                    gmt_offset_seconds: 3600,
                 },
-                distination: {
+
+                technical_stops: [
+                    {
+                        airport_code: "KUL",
+                        full_name: "Kuala Lumpur",
+                        arrival_time: 1626163200,
+                        departure_time: 1626163200,
+                        gmt_offset_seconds: 3600,
+                    }
+                ],
+
+                destination: {
                     airport_code: "DAC",
+                    full_name: "Dhaka",
                     terminal: "",
-                    arrival_time: "2024-07-20T11:45:00",
+                    arrival_time: 1626163200,
+                    gmt_offset_seconds: 3600,
                 },
                 airline: {
                     airline_code: "UK",
@@ -185,58 +268,125 @@ def search_result_translate(results: dict, search_params: dict):
                 }
             ]
 
+            cancellation: {}
+            date_change: {}
+
             meta_data: search_params
         },
     ]
     """
 
-    print(results)
-
     translated_results = []
 
-    if (
-        results is None
-        or results.get("response") is None
-        or results["response"].get("offersGroup") is None
-    ):
-        return []
+    for result in results:
 
-    for result in results["response"]["offersGroup"]:
+        # filtering with preferred airlines
+        if search_params.get("preferred_airlines") is not None:
+            if (
+                result["offer"]["validatingCarrier"]
+                not in search_params["preferred_airlines"]
+            ):
+                continue
+
+        # filtering with refundable flights
+        if search_params.get("refundable") is not None:
+            if result["offer"]["refundable"] != search_params["refundable"]:
+                continue
+
+        raw_price = Decimal(str(result["offer"]["price"]["totalPayable"]["total"]))
+        total_fare_with_markup = get_total_fare_with_markup(
+            raw_price=raw_price,
+            admin_markup_percentage=admin_markup,
+            agent_markup_instance=agent_markup_instance,
+        )
 
         translated_result = {
+            "trace_id": trace_id,
             "api_name": "bdfare",
-            "search_id": results["response"]["traceId"],
+            "search_id": search_id,
             "result_id": result["offer"]["offerId"],
             "is_refundable": result["offer"]["refundable"],
             "seats_available": result["offer"].get("seatsRemaining", 0),
-            "total_fare": result["offer"]["price"]["totalPayable"]["total"],
+            # markups
+            "only_admin_markup": float(total_fare_with_markup["only_admin_markup"]),
+            "only_agent_markup": float(total_fare_with_markup["only_agent_markup"]),
+            # pricing details
+            "base_price": float(raw_price),
+            "price_with_admin_markup": float(
+                total_fare_with_markup["price_with_admin_markup"]
+            ),
+            "total_fare": float(total_fare_with_markup["price_with_agent_markup"]),
+            "first_departure_time": 0,
+            "final_arrival_time": 0,
+            "inbound_stops": 0,
+            "outbound_stops": 0,
             "validating_carrier": result["offer"]["validatingCarrier"],
+            "airlines": set(),
             "segments": [],
             "fare_details": [],
             "baggage_details": [],
             "meta_data": search_params,
         }
 
+        # Add the first departure time
+        translated_result["first_departure_time"] = _iso_to_unix_local(
+            iso_date_string=result["offer"]["paxSegmentList"][0]["paxSegment"][
+                "departure"
+            ]["aircraftScheduledDateTime"],
+            iata_code=result["offer"]["paxSegmentList"][0]["paxSegment"]["departure"][
+                "iatA_LocationCode"
+            ],
+            gmt_offset=search_params["gmt_offset"],
+            only_time=True,
+        )["only_time"]
+
         # Add the segments
         for segment in result["offer"]["paxSegmentList"]:
+
+            # timing
+            departure_time = _iso_to_unix_local(
+                iso_date_string=segment["paxSegment"]["departure"][
+                    "aircraftScheduledDateTime"
+                ],
+                iata_code=segment["paxSegment"]["departure"]["iatA_LocationCode"],
+                gmt_offset=search_params["gmt_offset"],
+            )
+            arrival_time = _iso_to_unix_local(
+                iso_date_string=segment["paxSegment"]["arrival"][
+                    "aircraftScheduledDateTime"
+                ],
+                iata_code=segment["paxSegment"]["arrival"]["iatA_LocationCode"],
+                gmt_offset=search_params["gmt_offset"],
+            )
+
             translated_segment = {
+                "direction": (
+                    "inbound"
+                    if segment["paxSegment"]["returnJourney"]
+                    else ("outbound" if not direction else direction)
+                ),
                 "origin": {
                     "airport_code": segment["paxSegment"]["departure"][
                         "iatA_LocationCode"
                     ],
-                    "terminal": segment["paxSegment"]["departure"]["terminalName"],
-                    "departure_time": _iso_to_unix_local(
-                        segment["paxSegment"]["departure"]["aircraftScheduledDateTime"]
+                    "full_name": IATA_AIRPORT_CODE_MAP.get(
+                        segment["paxSegment"]["departure"]["iatA_LocationCode"]
                     ),
+                    "terminal": segment["paxSegment"]["departure"]["terminalName"],
+                    "departure_time": departure_time["unix_time"],
+                    "gmt_offset_seconds": departure_time["gmt_offset_seconds"],
                 },
+                "technical_stops": [],
                 "destination": {
                     "airport_code": segment["paxSegment"]["arrival"][
                         "iatA_LocationCode"
                     ],
-                    "terminal": segment["paxSegment"]["arrival"]["terminalName"],
-                    "arrival_time": _iso_to_unix_local(
-                        segment["paxSegment"]["arrival"]["aircraftScheduledDateTime"]
+                    "full_name": IATA_AIRPORT_CODE_MAP.get(
+                        segment["paxSegment"]["arrival"]["iatA_LocationCode"]
                     ),
+                    "terminal": segment["paxSegment"]["arrival"]["terminalName"],
+                    "arrival_time": arrival_time["unix_time"],
+                    "gmt_offset_seconds": arrival_time["gmt_offset_seconds"],
                 },
                 "airline": {
                     "airline_code": segment["paxSegment"]["operatingCarrierInfo"][
@@ -249,7 +399,82 @@ def search_result_translate(results: dict, search_params: dict):
                     "fare_basis": None,
                 },
             }
+
+            # Add the technical stops
+            if segment["paxSegment"]["technicalStopOver"] is not None:
+                for technical_stop in segment["paxSegment"]["technicalStopOver"]:
+                    technical_stop_arrival_time = _iso_to_unix_local(
+                        iso_date_string=technical_stop[
+                            "aircraftScheduledArrivalDateTime"
+                        ],
+                        iata_code=technical_stop["iatA_LocationCode"],
+                        gmt_offset=search_params["gmt_offset"],
+                    )
+                    technical_stop_departure_time = _iso_to_unix_local(
+                        iso_date_string=technical_stop[
+                            "aircraftScheduledDepartureDateTime"
+                        ],
+                        iata_code=technical_stop["iatA_LocationCode"],
+                        gmt_offset=search_params["gmt_offset"],
+                    )
+
+                    translated_technical_stop = {
+                        "airport_code": technical_stop["iatA_LocationCode"],
+                        "full_name": IATA_AIRPORT_CODE_MAP.get(
+                            technical_stop["iatA_LocationCode"],
+                            technical_stop["iatA_LocationCode"],
+                        ),
+                        "arrival_time": technical_stop_arrival_time["unix_time"],
+                        "departure_time": technical_stop_departure_time["unix_time"],
+                        "gmt_offset_seconds": technical_stop_arrival_time[
+                            "gmt_offset_seconds"
+                        ],
+                    }
+                translated_segment["technical_stops"].append(translated_technical_stop)
+                # print(translated_segment["technical_stops"])
+
             translated_result["segments"].append(translated_segment)
+
+            # Add the airline to the list
+            translated_result["airlines"].add(
+                segment["paxSegment"]["operatingCarrierInfo"]["carrierDesigCode"]
+            )
+
+            # update final_arrival_time
+            translated_result["final_arrival_time"] = _iso_to_unix_local(
+                iso_date_string=segment["paxSegment"]["arrival"][
+                    "aircraftScheduledDateTime"
+                ],
+                iata_code=segment["paxSegment"]["arrival"]["iatA_LocationCode"],
+                gmt_offset=search_params["gmt_offset"],
+                only_time=True,
+            )["only_time"]
+
+            # update stops
+            translated_result["inbound_stops"] += (
+                1 if translated_segment["direction"] == "inbound" else 0
+            )
+            translated_result["outbound_stops"] += (
+                1 if translated_segment["direction"] == "outbound" else 0
+            )
+
+        # check flight is return or not
+        segment_length = int(
+            len(translated_result["meta_data"]["segments"])
+            if not search_params["journey_type"] == "Return"
+            else len(search_params["segments"]) / 2
+        )
+
+        # modify stops
+        if translated_result["outbound_stops"] > 0:
+            translated_result["outbound_stops"] = (
+                translated_result["outbound_stops"] - segment_length
+            )
+
+        if translated_result["inbound_stops"] > 0:
+            translated_result["inbound_stops"] = (
+                translated_result["inbound_stops"] - segment_length
+            )
 
         # Add the fare details
         for fare_detail in result["offer"]["fareDetailList"]:
@@ -287,19 +512,211 @@ def search_result_translate(results: dict, search_params: dict):
                 }
                 translated_result["baggage_details"].append(translated_baggage)
 
+        # last arrival time - first departure time
+        translated_result["duration"] = (
+            translated_result["segments"][-1]["destination"]["arrival_time"]
+            - translated_result["segments"][0]["origin"]["departure_time"]
+        )
+
+        # convert airlines set to list
+        translated_result["airlines"] = list(translated_result["airlines"])
+
         translated_results.append(translated_result)
 
     return translated_results
 
 
-def _iso_to_unix_local(iso_date_string):
-    dt = datetime.fromisoformat(iso_date_string.rstrip("Z"))
-    dt_utc = dt.replace(tzinfo=timezone.utc)  # UTC time
-    unix_timestamp = dt_utc.timestamp()
-    return int(unix_timestamp)
-
-
 # ---------------------- Air Rules ----------------------
+def air_rules_mini_inject_translate(rules_params: dict) -> dict:
+    # translated to:
+    """
+    {
+        "traceId": "cd0cd824-c...",
+        "offerId": "cd0cd824-c...",
+    }
+    """
+    return {
+        "traceId": rules_params["search_id"],
+        "offerId": rules_params["result_id"],
+    }
+
+
+def air_rules_mini_result_translate(rules_params: dict):
+
+    # translated from:
+    """
+    "response": {
+        "penalty": {
+            "refundPenaltyList": [
+                {
+                    "refundPenalty": {
+                        "departure": "RJH",
+                        "arrival": "DAC",
+                        "penaltyInfoList": [
+                            {
+                                "penaltyInfo": {
+                                    "type": "Before Departure",
+                                    "textInfoList": [
+                                        {
+                                            "textInfo": {
+                                                "paxType": "Adult",
+                                                "info": [
+                                                    "BDT 2030"
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "textInfo": {
+                                                "paxType": "Child",
+                                                "info": [
+                                                    "BDT 2030"
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "penaltyInfo": {
+                                    "type": "After Departure",
+                                    "textInfoList": [
+                                        {
+                                            "textInfo": {
+                                                "paxType": "Adult",
+                                                "info": [
+                                                    "Cancellation allowed with fees"
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "textInfo": {
+                                                "paxType": "Child",
+                                                "info": [
+                                                    "Cancellation allowed with fees"
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                }
+            ],
+            "exchangePenaltyList": [
+                {
+                    "exchangePenalty": {
+                        "departure": "RJH",
+                        "arrival": "DAC",
+                        "penaltyInfoList": [
+                            {
+                                "penaltyInfo": {
+                                    "type": "Before Departure",
+                                    "textInfoList": [
+                                        {
+                                            "textInfo": {
+                                                "paxType": "Adult",
+                                                "info": [
+                                                    "BDT 2050"
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "textInfo": {
+                                                "paxType": "Child",
+                                                "info": [
+                                                    "BDT 2050"
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "penaltyInfo": {
+                                    "type": "After Departure",
+                                    "textInfoList": [
+                                        {
+                                            "textInfo": {
+                                                "paxType": "Adult",
+                                                "info": [
+                                                    "Exchange allowed with fees"
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "textInfo": {
+                                                "paxType": "Child",
+                                                "info": [
+                                                    "Exchange allowed with fees"
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    },
+    """
+
+    # translated to:
+    """
+    {
+        "cancellation": [
+            {
+                "pax_type": "Adult",
+                "city_pair": "DAC - CXB",
+                "type": "Before Departure",
+                "info": "description",
+            }
+        ]
+        "date_change": [
+            {
+                "pax_type": "Adult",
+                "city_pair": "DAC - CXB",
+                "type": "Before Departure",
+                "info": "description",
+            }
+        ]
+    }
+    """
+
+    translated_results = {
+        "cancellation": [],
+        "date_change": [],
+    }
+
+    for rule_type in [
+        ["refundPenaltyList", "refundPenalty"],
+        ["exchangePenaltyList", "exchangePenalty"],
+    ]:
+        # iterate over refund and exchange
+        penalty_obj = rules_params["response"]["penalty"][rule_type[0]][0]
+        city_pair = f"{penalty_obj[rule_type[1]]['departure']} - {penalty_obj[rule_type[1]]['arrival']}"
+
+        # iterate over penaltyInfoList
+        for penalty_info in penalty_obj[rule_type[1]]["penaltyInfoList"]:
+            schedule_type = penalty_info["penaltyInfo"]["type"]
+
+            # iterate over textInfoList
+            for text_info in penalty_info["penaltyInfo"]["textInfoList"]:
+                translated_rule = {
+                    "pax_type": text_info["textInfo"]["paxType"],
+                    "city_pair": city_pair,
+                    "type": schedule_type,
+                    "info": text_info["textInfo"]["info"][0],
+                }
+
+                if rule_type[0] == "refundPenaltyList":
+                    translated_results["cancellation"].append(translated_rule)
+                else:
+                    translated_results["date_change"].append(translated_rule)
+
+    return translated_results
 
 
 def air_rules_inject_translate(rules_params: dict):
@@ -329,7 +746,7 @@ def air_rules_result_translate(rules_params: dict):
     """
 
     translated_results = []
-    print(rules_params)
+    # print(rules_params)
 
     if rules_params["response"]["fareRuleRouteInfos"] is None:
         return []
@@ -481,22 +898,46 @@ def flight_booking_inject_translate(booking_params: dict):
             }
         translated_booking_params["request"]["paxList"].append(pax_info)
 
-    print(translated_booking_params)
+    # print(translated_booking_params)
     return translated_booking_params
 
 
-def flight_pre_booking_result_translate(booking_params: dict, meta_data: dict):
+def flight_pre_booking_result_translate(
+    booking_params: dict,
+    meta_data: dict,
+    admin_markup: Decimal,
+    agent_markup_instance,
+):
     if (
         booking_params is None
         or booking_params.get("response") is None
         or booking_params["response"].get("offersGroup") is None
     ):
-        return {"error": "Cannot process your request"}
+        return {
+            "__error": "You cannot pre-book this flight. Please try another flight."
+        }
 
-    return search_result_translate(booking_params, meta_data)
+    result = process_search_result(
+        results=booking_params,
+        search_params=meta_data,
+        trace_id=None,
+        admin_markup=admin_markup,
+        agent_markup_instance=agent_markup_instance,
+    )
+    if result is []:
+        return {
+            "__error": "You cannot pre-book this flight. Please try another flight."
+        }
+
+    return result
 
 
-def flight_booking_result_translate(booking_params: dict, meta_data: dict):
+def flight_booking_result_translate(
+    booking_params: dict,
+    meta_data: dict,
+    admin_markup: Decimal,
+    agent_markup_instance,
+):
     # translated to:
     """
     [
@@ -507,7 +948,15 @@ def flight_booking_result_translate(booking_params: dict, meta_data: dict):
             is_refundable: False,
             seats_available: 1,
             fare_basis: [],
+
+            only_admin_markup: 50,
+            only_agent_markup: 50,
+            base_price: 1100,
+            price_with_admin_markup: 1150,
             total_fare: 1200,
+
+
+            pnr: "ABC123",
 
             segments: [
             {
@@ -516,7 +965,7 @@ def flight_booking_result_translate(booking_params: dict, meta_data: dict):
                     terminal: "",
                     departure_time: "2024-07-20T11:45:00",
                 },
-                distination: {
+                destination: {
                     airport_code: "DAC",
                     terminal: "",
                     arrival_time: "2024-07-20T11:45:00",
@@ -557,7 +1006,7 @@ def flight_booking_result_translate(booking_params: dict, meta_data: dict):
     ]
     """
 
-    print(booking_params)
+    # print(booking_params)
 
     translated_results = []
 
@@ -570,6 +1019,14 @@ def flight_booking_result_translate(booking_params: dict, meta_data: dict):
 
     for result in booking_params["response"]["orderItem"]:
 
+        # Calculate the total fare
+        raw_price = Decimal(str(result["price"]["totalPayable"]["total"]))
+        total_fare_with_markup = get_total_fare_with_markup(
+            raw_price=raw_price,
+            admin_markup_percentage=admin_markup,
+            agent_markup_instance=agent_markup_instance,
+        )
+
         translated_result = {
             "api_name": "bdfare",
             "search_id": booking_params["response"]["traceId"],
@@ -577,33 +1034,56 @@ def flight_booking_result_translate(booking_params: dict, meta_data: dict):
             "is_refundable": result["refundable"],
             "seats_available": result.get("seatsRemaining", 0),
             "fare_basis": [],
-            "total_fare": result["price"]["totalPayable"]["total"],
+            # markups
+            "only_admin_markup": float(total_fare_with_markup["only_admin_markup"]),
+            "only_agent_markup": float(total_fare_with_markup["only_agent_markup"]),
+            # pricing details
+            "base_price": float(raw_price),
+            "price_with_admin_markup": float(
+                total_fare_with_markup["price_with_admin_markup"]
+            ),
+            "total_fare": float(total_fare_with_markup["price_with_agent_markup"]),
             "segments": [],
             "fare_details": [],
             "baggage_details": [],
             "meta_data": meta_data,
+            "pnr": result["paxSegmentList"][0]["paxSegment"]["airlinePNR"],
         }
 
         # Add the segments
         for segment in result["paxSegmentList"]:
+            # timings
+            departure_time = _iso_to_unix_local(
+                iso_date_string=segment["paxSegment"]["departure"][
+                    "aircraftScheduledDateTime"
+                ],
+                iata_code=segment["paxSegment"]["departure"]["iatA_LocationCode"],
+                gmt_offset=meta_data["gmt_offset"],
+            )
+            arrival_time = _iso_to_unix_local(
+                iso_date_string=segment["paxSegment"]["arrival"][
+                    "aircraftScheduledDateTime"
+                ],
+                iata_code=segment["paxSegment"]["arrival"]["iatA_LocationCode"],
+                gmt_offset=meta_data["gmt_offset"],
+            )
+
             translated_segment = {
                 "origin": {
                     "airport_code": segment["paxSegment"]["departure"][
                         "iatA_LocationCode"
                     ],
                     "terminal": segment["paxSegment"]["departure"]["terminalName"],
-                    "departure_time": _iso_to_unix_local(
-                        segment["paxSegment"]["departure"]["aircraftScheduledDateTime"]
-                    ),
+                    "departure_time": departure_time["unix_time"],
+                    "gmt_offset_seconds": departure_time["gmt_offset_seconds"],
                 },
-                "distination": {
+                "destination": {
                     "airport_code": segment["paxSegment"]["arrival"][
                         "iatA_LocationCode"
                     ],
                     "terminal": segment["paxSegment"]["arrival"]["terminalName"],
-                    "arrival_time": _iso_to_unix_local(
-                        segment["paxSegment"]["arrival"]["aircraftScheduledDateTime"]
-                    ),
+                    "arrival_time": arrival_time["unix_time"],
+                    "gmt_offset_seconds": arrival_time["gmt_offset_seconds"],
                 },
                 "airline": {
                     "airline_code": segment["paxSegment"]["operatingCarrierInfo"][
@@ -659,5 +1139,47 @@ def flight_booking_result_translate(booking_params: dict, meta_data: dict):
 
 
 # import json
-# x = json.load(open("response.json"))
+# x = json.load(open("response_logs.json"))
 # print(json.dumps(flight_booking_result_translate(x), indent=4))
+
+
+def _iso_to_unix_local(
+    iso_date_string, iata_code="", gmt_offset="+00:00", only_time=False
+) -> dict:
+    """
+    Input: "2024-07-20T11:45:00+05:00", "+05:00"
+    Returns: Unix timestamp as an integer.
+    """
+
+    # 1. Parse the ISO date string as a naive datetime (no timezone applied)
+    gmt_offset = AIRPORT_TO_GMT.get(iata_code, gmt_offset)
+    # convert "2024-07-20T11:45:00Z" to "2024-07-20T11:45:00+00:00"
+    if iso_date_string[-1] == "Z":
+        iso_date_string = iso_date_string.replace("Z", gmt_offset)
+    else:
+        iso_date_string += gmt_offset
+
+    datetime_obj = parser.isoparse(iso_date_string)
+    user_timezone = timezone(
+        timedelta(
+            hours=(
+                int(gmt_offset[1:3]) if gmt_offset[0] == "+" else -int(gmt_offset[1:3])
+            )
+        )
+    )
+
+    datetime_user = datetime_obj.astimezone(user_timezone)
+
+    if only_time:
+        # Extract the time and calculate seconds since midnight
+        midnight = datetime_user.replace(hour=0, minute=0, second=0, microsecond=0)
+        seconds_since_midnight = (datetime_user - midnight).seconds
+        return {
+            "only_time": seconds_since_midnight,
+        }
+
+    unix_time = int(datetime_user.timestamp())
+    return {
+        "unix_time": unix_time,
+        "gmt_offset_seconds": int(datetime_obj.utcoffset().total_seconds()),
+    }

@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Apps
     "api_handler.apps.ApiHandlerConfig",
+    "administrator.apps.AdministratorConfig",
     # Celery
     "django_celery_beat",
 ]

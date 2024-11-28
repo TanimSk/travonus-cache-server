@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.utils import timezone
+from decimal import Decimal
 import requests
 import base64
 import redis
@@ -76,7 +77,9 @@ def call_external_api(
         if response.status_code == 200:
 
             if "application/json" in response.headers.get("content-type"):
-                print("-----------------RESPONSE--------------------\n", response.json())
+                print(
+                    "-----------------RESPONSE--------------------\n", response.json()
+                )
                 return response.json()
 
             return response.text
@@ -195,4 +198,26 @@ def get_search_payload(origin: str, destination: str, departure_date: str) -> di
                 "departure_date": departure_date,
             }
         ],
+    }
+
+
+def get_total_fare_with_markup(
+    raw_price: Decimal,
+    admin_markup_percentage: Decimal,
+    *args,
+) -> dict:
+    # adding admin markup
+    admin_markup_amount = raw_price * (admin_markup_percentage / 100)
+    price_with_admin_markup = raw_price + admin_markup_amount
+
+    # adding agent markup
+    agent_markup_amount = Decimal(0)
+
+    # if agent_markup_instance is None:
+    return {
+        "raw_price": raw_price,
+        "only_admin_markup": admin_markup_amount,
+        "only_agent_markup": agent_markup_amount,
+        "price_with_admin_markup": price_with_admin_markup,
+        "price_with_agent_markup": price_with_admin_markup,
     }

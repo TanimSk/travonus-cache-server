@@ -13,6 +13,8 @@ from api_handler.utils import store_in_redis, remove_all_flights
 from django.utils import timezone
 from datetime import timedelta
 import concurrent.futures
+from uuid import uuid4
+from administrator.models import MobileAdminInfo
 
 
 @shared_task
@@ -23,9 +25,13 @@ def update_token():
 
 @shared_task
 def store_in_cache():
+    # clear all previous data
     remove_all_flights()
-    start_date = timezone.now()
 
+    trace_id = str(uuid4())
+    admin_markup = MobileAdminInfo.objects.first().admin_markup
+
+    start_date = timezone.now()
     # Store the results for the next 7 days
     for i in range(7):
         for origin, destination in ALL_AIRLINES:
@@ -40,8 +46,12 @@ def store_in_cache():
             # Threading requests
             with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
                 futures = [
-                    executor.submit(bdfare_air_search, search_payload),
-                    executor.submit(sabre_air_search, search_payload),
+                    executor.submit(
+                        bdfare_air_search, search_payload, trace_id, admin_markup
+                    ),
+                    executor.submit(
+                        sabre_air_search, search_payload, trace_id, admin_markup
+                    ),
                     # executor.submit(flyhub_air_search, search_payload),
                 ]
 
@@ -54,6 +64,7 @@ def store_in_cache():
             print(f"result: {len(result)}")
             store_in_redis(result)
 
+
 # --------------- for updating the tokens ---------------
 schedule, _ = IntervalSchedule.objects.get_or_create(
     every=5,
@@ -64,9 +75,9 @@ schedule, _ = IntervalSchedule.objects.get_or_create(
 periodic_task_instance, created = PeriodicTask.objects.get_or_create(
     name="Update Token",
     defaults={
-        'task': "api_handler.tasks.update_token",
-        'interval': schedule,
-    }
+        "task": "api_handler.tasks.update_token",
+        "interval": schedule,
+    },
 )
 
 # If the task already exists, you may want to update it
@@ -88,9 +99,9 @@ crontab_schedule, _ = CrontabSchedule.objects.get_or_create(
 cache_task_instance, created = PeriodicTask.objects.get_or_create(
     name="Store in Cache",
     defaults={
-        'task': "api_handler.tasks.store_in_cache",
-        'crontab': crontab_schedule,
-    }
+        "task": "api_handler.tasks.store_in_cache",
+        "crontab": crontab_schedule,
+    },
 )
 
 # If the task already exists, update it
