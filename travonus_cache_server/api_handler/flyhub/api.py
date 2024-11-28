@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.conf import settings
 from api_handler.utils import call_external_api
 from api_handler.flyhub.serializers import AuthenticationSerializer
@@ -16,6 +17,7 @@ from api_handler.flyhub.translators import (
     flight_ticket_inject_translate,
 )
 import json
+
 
 ##########
 # Flyhub #
@@ -70,14 +72,17 @@ def air_search(search_params: dict):
     return search_result_translate(api_response, search_params)
 
 
-def pricing_details(pricing_params: dict):
-    """
-    First step: re-search the flight with meta_data
-    Second step: get the best match flight
-    Third step: get the pricing details
-    """
-
-    results = air_search(pricing_params["meta_data"])
+def pricing_details(
+    pricing_params: dict,
+    admin_markup: Decimal,
+    agent_markup_instance=None,
+):
+    results = air_search(
+        search_params=pricing_params["meta_data"],
+        tracing_id=pricing_params["trace_id"],
+        admin_markup=admin_markup,
+        agent_markup_instance=agent_markup_instance,
+    )
     if results is []:
         return []
 
@@ -86,17 +91,18 @@ def pricing_details(pricing_params: dict):
         return []
 
     print(json.dumps(best_match_flight, indent=4))
+    return best_match_flight
 
-    body = air_rules_inject_translate(rules_params=best_match_flight)
-    print(json.dumps(body, indent=4))
+    # body = air_rules_inject_translate(rules_params=best_match_flight)
+    # print(json.dumps(body, indent=4))
 
-    token = ApiCredentials.objects.get(api_name="flyhub").token
-    api_response = call_external_api(
-        urls.AIR_PRICING_DETAILS_URL,
-        method="POST",
-        data=body,
-        headers={"Authorization": f"Bearer {token}"},
-        ssl=False,
-    )
-    print(json.dumps(api_response, indent=4))
-    return search_result_translate(api_response, pricing_params["meta_data"])
+    # token = ApiCredentials.objects.get(api_name="flyhub").token
+    # api_response = call_external_api(
+    #     urls.AIR_PRICING_DETAILS_URL,
+    #     method="POST",
+    #     data=body,
+    #     headers={"Authorization": f"Bearer {token}"},
+    #     ssl=False,
+    # )
+    # print(json.dumps(api_response, indent=4))
+    # return search_result_translate(api_response, pricing_params["meta_data"])

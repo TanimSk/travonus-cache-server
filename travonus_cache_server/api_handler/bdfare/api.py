@@ -18,6 +18,7 @@ from api_handler.bdfare.translators import (
     air_rules_mini_result_translate,
 )
 from api_handler.bdfare import urls
+from api_handler.utils import get_best_match_flight
 
 # from agent.models import AgentMarkup
 # from django.db.models import QuerySet
@@ -89,20 +90,36 @@ def pricing_details(
     admin_markup: Decimal,
     agent_markup_instance=None,
 ):
-    body = air_pricing_details_inject_translate(pricing_params=pricing_params)
-    print(json.dumps(body, indent=4))
-
-    api_response = call_external_api(
-        urls.AIR_PRICING_DETAILS_URL,
-        method="POST",
-        data=body,
-        headers={"X-API-KEY": settings.BDFARE_TOKEN},
-        ssl=False,
-    )
-    print(json.dumps(api_response, indent=4))
-    return process_search_result(
-        api_response,
-        pricing_params["meta_data"],
+    results = air_search(
+        search_params=pricing_params["meta_data"],
+        tracing_id=pricing_params["trace_id"],
         admin_markup=admin_markup,
         agent_markup_instance=agent_markup_instance,
     )
+    if results is []:
+        return []
+
+    best_match_flight = get_best_match_flight(results, pricing_params)
+    if best_match_flight is None:
+        return []
+
+    print(json.dumps(best_match_flight, indent=4))
+    return best_match_flight
+
+    # body = air_pricing_details_inject_translate(pricing_params=pricing_params)
+    # print(json.dumps(body, indent=4))
+
+    # api_response = call_external_api(
+    #     urls.AIR_PRICING_DETAILS_URL,
+    #     method="POST",
+    #     data=body,
+    #     headers={"X-API-KEY": settings.BDFARE_TOKEN},
+    #     ssl=False,
+    # )
+    # print(json.dumps(api_response, indent=4))
+    # return process_search_result(
+    #     api_response,
+    #     pricing_params["meta_data"],
+    #     admin_markup=admin_markup,
+    #     agent_markup_instance=agent_markup_instance,
+    # )

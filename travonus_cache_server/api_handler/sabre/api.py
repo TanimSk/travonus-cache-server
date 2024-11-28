@@ -5,7 +5,7 @@ from django.http import JsonResponse
 import json
 import threading
 from decimal import Decimal
-
+from api_handler.utils import get_best_match_flight
 from api_handler.sabre.translators import (
     air_search_translate,
     search_result_translate,
@@ -138,21 +138,18 @@ def pricing_details(
     admin_markup: Decimal,
     agent_markup_instance=None,
 ):
-    body = air_pricing_details_inject_translate(pricing_params=pricing_params)
-
-    token = ApiCredentials.objects.get(api_name="sabre").token
-    api_response = call_external_api(
-        urls.AIR_PRICING_DETAILS_URL,
-        method="POST",
-        data=body,
-        headers={"Authorization": f"Bearer {token}"},
-        ssl=False,
-    )
-
-    # print(api_response)
-    return air_pricing_details_result_translate(
-        results=api_response,
+    results = air_search(
         search_params=pricing_params["meta_data"],
+        tracing_id=pricing_params["trace_id"],
         admin_markup=admin_markup,
         agent_markup_instance=agent_markup_instance,
     )
+    if results is []:
+        return []
+
+    best_match_flight = get_best_match_flight(results, pricing_params)
+    if best_match_flight is None:
+        return []
+
+    print(json.dumps(best_match_flight, indent=4))
+    return best_match_flight
