@@ -204,7 +204,7 @@ def get_search_payload(origin: str, destination: str, departure_date: str) -> di
 def get_total_fare_with_markup(
     raw_price: Decimal,
     admin_markup_percentage: Decimal,
-    *args,
+    **kwargs,
 ) -> dict:
     # adding admin markup
     admin_markup_amount = raw_price * (admin_markup_percentage / 100)
