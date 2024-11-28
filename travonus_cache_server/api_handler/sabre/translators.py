@@ -4,8 +4,6 @@ from dateutil import parser
 # import time
 # import json
 import xml.etree.ElementTree as ET
-from api_handler.sabre import create_session
-from api_handler.models import SessionToken
 from decimal import Decimal
 from api_handler.constants import IATA_AIRPORT_CODE_MAP
 
@@ -686,109 +684,7 @@ def search_result_translate(
 
     return translated_results
 
-
-# -------------------- Air rules --------------------
-def air_rules_inject_translate(rules_params: dict):
-    # translated to:
-    """
-    [
-        {
-            route: "DAC - CXB",
-            xml: "<xml>"
-        }
-    ]
-    """
-    seesion_token = SessionToken.objects.last().token
-    xml_bodies = []
-
-    for segments in rules_params["segments"]:
-        departure_date = _unix_to_iso_date(segments["origin"]["departure_time"])
-        origin = segments["origin"]["airport_code"]
-        airline_name = segments["airline"]["airline_name"]
-        destination = segments["destination"]["airport_code"]
-        fare_basis = segments["airline"]["fare_basis"]
-
-        xml_bodies.append(
-            {
-                "route": f"{origin} - {destination}",
-                "xml": f"""
-            {create_session.xml_header(seesion_token)}
-            <OTA_AirRulesRQ ReturnHostCommand="true" Version="2.3.0" xmlns="http://webservices.sabre.com/sabreXML/2011/10" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-                <OriginDestinationInformation>
-                    <FlightSegment DepartureDateTime="{departure_date}">
-                        <DestinationLocation LocationCode="{destination}"/>
-                        <MarketingCarrier Code="{airline_name}"/>
-                        <OriginLocation LocationCode="{origin}"/>
-                    </FlightSegment>
-                </OriginDestinationInformation>
-                <RuleReqInfo>
-                    <FareBasis Code="{fare_basis}"/>                    
-                </RuleReqInfo>
-            </OTA_AirRulesRQ>
-            {create_session.xml_footer()}
-            """,
-            }
-        )
-
-    return xml_bodies
-
-
 # ---------------------- Air Rules ----------------------
-
-
-def extract_rules(xml_string):
-    # Parse the XML string
-    root = ET.fromstring(xml_string)
-
-    # Define namespaces
-    namespaces = {
-        "soap-env": "http://schemas.xmlsoap.org/soap/envelope/",
-        "eb": "http://www.ebxml.org/namespaces/messageHeader",
-        "wsse": "http://schemas.xmlsoap.org/ws/2002/12/secext",
-        "sabre": "http://webservices.sabre.com/sabreXML/2011/10",
-        "stl": "http://services.sabre.com/STL/v01",
-    }
-
-    # Find all paragraphs with the rules
-    paragraphs = root.findall(".//sabre:Paragraph", namespaces)
-
-    # Extract and store the rules
-    rules = []
-    for paragraph in paragraphs:
-        # rph = paragraph.get('RPH')
-        title = paragraph.get("Title")
-        text = (
-            paragraph.find("sabre:Text", namespaces).text.strip()
-            if paragraph.find("sabre:Text", namespaces) is not None
-            else ""
-        )
-        rules.append(f"{title}\n\n{text}")
-
-    return rules
-
-
-def air_rules_result_translate(rules_params: dict):
-    # translated to:
-    """
-    [
-        {
-            route: "DAC - CXB",
-            rule_details: [...]
-        }
-    ]
-    """
-    translated_rules = []
-
-    for rules in rules_params:
-        translated_rules.append(
-            {
-                "route": rules["route"],
-                "rule_details": extract_rules(rules["body"]),
-            }
-        )
-
-    return translated_rules
-
 
 def air_rules_mini_inject_translate(rules_params: dict) -> dict:
     # same as air_rules_inject_translate
