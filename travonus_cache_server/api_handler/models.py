@@ -8,6 +8,6 @@ class ApiCredentials(models.Model):
     expiry_date = models.DateTimeField()
 
 
-class SessionToken(models.Model):
-    token = models.TextField()
-    created_on = models.DateTimeField(auto_now_add=True)
+# class SessionToken(models.Model):
+#     token = models.TextField()
+#     created_on = models.DateTimeField(auto_now_add=True)

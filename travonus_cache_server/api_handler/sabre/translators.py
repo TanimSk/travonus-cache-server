@@ -10,7 +10,6 @@ from decimal import Decimal
 from api_handler.constants import IATA_AIRPORT_CODE_MAP
 
 # from agent.models import AgentMarkup
-from django.db.models import QuerySet
 from api_handler.utils import get_total_fare_with_markup
 from api_handler.constants import AIRLINES_FULL_NAMES
 

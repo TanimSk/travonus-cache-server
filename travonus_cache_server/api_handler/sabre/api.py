@@ -22,7 +22,6 @@ from api_handler.sabre.translators import (
 # from agent.models import AgentMarkup
 from api_handler.sabre.serializers import AuthenticationSerializer
 from api_handler.sabre import urls
-from api_handler.sabre.create_session import create_session
 import concurrent.futures
 from django.utils import timezone
 
@@ -79,7 +78,7 @@ def air_search(
     body = air_search_translate(search_params=search_params)
 
     # pretty print json
-    print(json.dumps(body, indent=4))
+    # print(json.dumps(body, indent=4))
 
     token = ApiCredentials.objects.get(api_name="sabre").token
     api_response = call_external_api(
