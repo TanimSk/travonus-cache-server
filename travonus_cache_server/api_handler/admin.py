@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import ApiCredentials, SessionToken
+from .models import ApiCredentials
 
 
 @admin.register(ApiCredentials)
@@ -13,10 +13,3 @@ class ApiCredentialsAdmin(admin.ModelAdmin):
     search_fields = ("first_name", "last_name", "email", "token_id")
     readonly_fields = ("created_on",)
     list_filter = ("created_on", "expiry_date")
-
-
-@admin.register(SessionToken)
-class SessionTokenAdmin(admin.ModelAdmin):
-    list_display = ("token", "created_on")
-    search_fields = ("token",)
-    readonly_fields = ("created_on",)
