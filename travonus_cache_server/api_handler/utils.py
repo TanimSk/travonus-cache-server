@@ -191,6 +191,9 @@ def get_search_payload(origin: str, destination: str, departure_date: str) -> di
         "user_ip": "192.46.211.211",
         "journey_type": "Oneway",
         "booking_class": "Economy",
+        "gmt_offset": "+06:00",
+        "preferred_airlines": None,
+        "refundable": None,
         "segments": [
             {
                 "origin": origin,
