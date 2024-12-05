@@ -112,4 +112,7 @@ class PricingDetails(APIView):
         elif serialized_data.data["api_name"] == "sabre":
             result = sabre_pricing_details(serialized_data.data, admin_markup)
 
-        return JsonResponse(result, safe=False)
+        if len(result) == 0:
+            return JsonResponse([], safe=False, status=404)
+
+        return JsonResponse(result, safe=False, status=200)
