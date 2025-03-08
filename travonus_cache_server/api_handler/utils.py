@@ -253,8 +253,8 @@ def get_restricted_flights(
 ) -> list:
     sql_query = """
     SELECT airline_routes_date_identifier
-    FROM api_handler_gdsflight    
-    AND platform = %s
+    FROM api_handler_gdsflight 
+    WHERE platform = %s    
     AND booking_class = %s
     AND journey_type = %s
     AND flight_start_date = %s;

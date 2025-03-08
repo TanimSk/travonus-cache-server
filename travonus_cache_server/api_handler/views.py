@@ -56,7 +56,7 @@ class CacheAirSearch(APIView):
 
         if serialized_data.is_valid(raise_exception=True):
 
-            result = []
+            results = []
             index_name = "result_cache_idx"
 
             origin = serialized_data.data["segments"][0]["origin"]
