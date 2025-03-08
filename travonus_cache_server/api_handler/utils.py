@@ -1,3 +1,4 @@
+from django.db import connections
 from django.conf import settings
 from django.utils import timezone
 from decimal import Decimal
@@ -224,3 +225,50 @@ def get_total_fare_with_markup(
         "price_with_admin_markup": price_with_admin_markup,
         "price_with_agent_markup": price_with_admin_markup,
     }
+
+
+def create_flight_identifier(search_result: dict) -> str:
+    """
+    return format:
+    BG;BG DAC-CGP;CGP-DAC 2021-09-01;2021-09-02
+    """
+
+    segments = search_result["segments"]
+    meta_segments = search_result["meta_data"]["segments"]
+
+    airlines = ";".join(seg["airline"]["airline_code"] for seg in segments)
+    routes = ";".join(
+        f"{seg['origin']['airport_code']}-{seg['destination']['airport_code']}"
+        for seg in segments
+    )
+    departure_dates = ";".join(seg["departure_date"] for seg in meta_segments)
+
+    result = f"{airlines} {routes} {departure_dates}"
+
+    return result
+
+
+def get_restricted_flights(
+    booking_class: str, journey_type: str, flight_start_date: str
+) -> list:
+    sql_query = """
+    SELECT airline_routes_date_identifier
+    FROM api_handler_gdsflight    
+    AND platform = %s
+    AND booking_class = %s
+    AND journey_type = %s
+    AND flight_start_date = %s;
+    """
+
+    params = (
+        "mobile",
+        booking_class,
+        journey_type,
+        flight_start_date,
+    )
+
+    with connections["secondary"].cursor() as cursor:
+        cursor.execute(sql_query, params)
+        restricted_flights = [row[0] for row in cursor.fetchall()]
+
+    return restricted_flights

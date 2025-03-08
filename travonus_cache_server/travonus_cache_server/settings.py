@@ -97,6 +97,14 @@ DATABASES = {
         "PASSWORD": "123",
         "HOST": "localhost",
         "PORT": "",
+    },
+    "secondary": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "travonus",
+        "USER": "ongshak",
+        "PASSWORD": "123",
+        "HOST": "localhost",
+        "PORT": "",
     }
 }
 

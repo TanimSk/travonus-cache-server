@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from django.http import JsonResponse
 import concurrent.futures
+from api_handler.utils import create_flight_identifier, get_restricted_flights
 
 # from django.conf import settings
 from administrator.models import MobileAdminInfo
@@ -33,11 +34,20 @@ from api_handler.sabre.api import pricing_details as sabre_pricing_details
 class CacheAirSearch(APIView):
     serializer_class = AirSearchSerializer
 
-    def convert_to_json(self, results):
+    def convert_to_json(self, results, **kwargs) -> list:
         flights = []
+        restricted_flights = get_restricted_flights(
+            booking_class=kwargs["booking_class"],
+            journey_type=kwargs["journey_type"],
+            flight_start_date=kwargs["flight_start_date"],
+        )
+
+        print(restricted_flights)
+
         for doc in results.docs:
             flight = redis_client.json().get(doc.id)
-            flights.append(flight)
+            if not create_flight_identifier(search_result=flight) in restricted_flights:
+                flights.append(flight)
 
         return flights
 
@@ -82,10 +92,15 @@ class CacheAirSearch(APIView):
                 .sort_by("total_fare", asc=True)
                 .paging(0, 100)
             )
-            result = redis_client.ft(index_name).search(query)
-            result = self.convert_to_json(result)
+            results = redis_client.ft(index_name).search(query)
+            results = self.convert_to_json(
+                results=results,
+                booking_class=serialized_data.data["booking_class"],
+                journey_type=serialized_data.data["journey_type"],
+                flight_start_date=serialized_data.data["segments"][0]["departure_date"],
+            )
 
-            return JsonResponse(result, safe=False)
+            return JsonResponse(results, safe=False)
 
 
 class ClearCacheAPI(APIView):
