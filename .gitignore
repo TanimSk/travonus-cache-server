@@ -1,5 +1,5 @@
 venv/
-logs/
+logs/*
 travonus_cache_server/administrator/migrations/*
 travonus_cache_server/api_handler/migrations/*
 
