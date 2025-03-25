@@ -40,6 +40,7 @@ class Command(BaseCommand):
                     # Schema
                     (
                         NumericField("$.total_fare", as_name="total_fare"),
+                        NumericField("$.first_departure_time", as_name="first_departure_time"),
                         TagField("$.is_refundable", as_name="is_refundable"),
                         TextField("$.meta_data.segments[0].origin", as_name="origin"),
                         TextField(

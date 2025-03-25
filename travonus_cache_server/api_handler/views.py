@@ -1,5 +1,6 @@
 from rest_framework.views import APIView
 from django.http import JsonResponse
+from django.utils import timezone
 import concurrent.futures
 from api_handler.utils import create_flight_identifier, get_restricted_flights
 
@@ -64,11 +65,16 @@ class CacheAirSearch(APIView):
             departure_date = serialized_data.data["segments"][0][
                 "departure_date"
             ].replace("-", "\\-")
+            # now time in unix timestamp
+            now_datetime = timezone.localtime(timezone.now())
+            now_unix_time = now_datetime.hour * 3600 + now_datetime.minute * 60 + now_datetime.second
+
 
             query_str = (
                 f"@origin:{origin} "
                 f"@destination:{destination} "
-                f"@departure_date:{{{departure_date}}}"
+                f"@departure_date:{{{departure_date}}} "
+                f"@first_departure_time:[{now_unix_time} +inf]"
             )
 
             # filter by refundable
