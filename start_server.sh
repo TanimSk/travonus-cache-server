@@ -10,11 +10,6 @@ DJANGO_LOG="$LOG_DIR/django_server.log"
 CELERY_WORKER_LOG="$LOG_DIR/celery_worker.log"
 CELERY_BEAT_LOG="$LOG_DIR/celery_beat.log"
 
-# Start the Django development server
-echo "Starting Django development server..."
-python manage.py runserver 0.0.0.0:7333 > "$DJANGO_LOG" 2>&1 &
-DJANGO_PID=$!
-
 # Start the Celery worker
 echo "Starting Celery worker..."
 celery -A travonus_cache_server worker -l INFO > "$CELERY_WORKER_LOG" 2>&1 &

@@ -1,0 +1,89 @@
+bfd49ba0-99cb-4cc6-817a-20a7b365999a
+646d8de7-fb51-47dc-a38e-2e098e404ced
+{'message': None, 'requestedOn': '2025-03-06T04:29:13.8954559Z', 'respondedOn': '2025-03-06T04:29:16.0438944Z', 'response': {'offersGroup': [{'offer': {'twoOnewayIndex': None, 'offerId': 'bc60fd2e-f163-4b4e-9518-32a602b5181f', 'validatingCarrier': '2A', 'refundable': True, 'fareType': 'OnHold', 'paxSegmentList': [{'paxSegment': {'departure': {'iatA_LocationCode': 'DAC', 'terminalName': 'D', 'aircraftScheduledDateTime': '2025-03-06T19:30:00'}, 'arrival': {'iatA_LocationCode': 'CXB', 'terminalName': 'D', 'aircraftScheduledDateTime': '2025-03-06T20:35:00'}, 'marketingCarrierInfo': {'carrierDesigCode': '2A', 'marketingCarrierFlightNumber': '451', 'carrierName': 'AirAstra'}, 'operatingCarrierInfo': {'carrierDesigCode': '2A', 'carrierName': 'AirAstra'}, 'iatA_AircraftType': {'iatA_AircraftTypeCode': 'AT7'}, 'rbd': 'I', 'flightNumber': '451', 'segmentGroup': 0, 'returnJourney': False, 'airlinePNR': None, 'technicalStopOver': None, 'duration': '65', 'cabinType': 'Economy'}}], 'fareDetailList': [{'fareDetail': {'baseFare': 5204, 'tax': 975, 'otherFee': 0, 'discount': 0, 'vat': 120, 'currency': 'BDT', 'paxType': 'Adult', 'paxCount': 1, 'subTotal': 6299}}], 'price': {'totalPayable': {'total': 6299, 'curreny': 'BDT'}, 'gross': {'total': 6179, 'curreny': 'BDT'}, 'discount': {'total': 0, 'curreny': 'BDT'}, 'totalVAT': {'total': 120, 'curreny': 'BDT'}}, 'penalty': {'refundPenaltyList': [{'refundPenalty': {'departure': 'DAC', 'arrival': 'CXB', 'penaltyInfoList': [{'penaltyInfo': {'type': 'Before Departure', 'textInfoList': [{'textInfo': {'paxType': 'Adult', 'info': ['0 hours - 24 hours BDT 2000']}}, {'textInfo': {'paxType': 'Adult', 'info': ['24 hours - 365 days BDT 1700']}}]}}, {'penaltyInfo': {'type': 'After Departure', 'textInfoList': [{'textInfo': {'paxType': 'Adult', 'info': ['BDT 2200']}}]}}]}}], 'exchangePenaltyList': [{'exchangePenalty': {'departure': 'DAC', 'arrival': 'CXB', 'penaltyInfoList': [{'penaltyInfo': {'type': 'Before Departure', 'textInfoList': [{'textInfo': {'paxType': 'Adult', 'info': ['0 hours - 24 hours BDT 2100']}}, {'textInfo': {'paxType': 'Adult', 'info': ['24 hours - 365 days BDT 1500']}}]}}, {'penaltyInfo': {'type': 'After Departure', 'textInfoList': [{'textInfo': {'paxType': 'Adult', 'info': ['BDT 2300']}}]}}]}}]}, 'baggageAllowanceList': [{'baggageAllowance': {'departure': 'DAC', 'arrival': 'CXB', 'checkIn': [{'paxType': 'Adult', 'allowance': '20Kg'}], 'cabin': [{'paxType': 'Adult', 'allowance': '7Kg'}]}}], 'upSellBrandList': None, 'seatsRemaining': '9'}}], 'offerChangeInfo': None, 'offerAvailable': True, 'passportRequired': False, 'availableSSR': None, 'partialPaymentInfo': None, 'traceId': '415be48c-d7a3-41ef-b5d5-ac5fdd87ec79'}, 'statusCode': 'OK', 'success': True, 'error': None, 'info': None}{
+    "trace_id": "564e1379-6dbf-4cf9-874e-94ec2b6374cc",
+    "api_name": "bdfare",
+    "search_id": "415be48c-d7a3-41ef-b5d5-ac5fdd87ec79",
+    "result_id": "bc60fd2e-f163-4b4e-9518-32a602b5181f",
+    "is_refundable": true,
+    "seats_available": "9",
+    "only_admin_markup": 629.9,
+    "only_agent_markup": 0.0,
+    "base_price": 6299.0,
+    "price_with_admin_markup": 6928.9,
+    "total_fare": 6928.9,
+    "first_departure_time": 70200,
+    "final_arrival_time": 74100,
+    "inbound_stops": 0,
+    "outbound_stops": 0,
+    "validating_carrier": "2A",
+    "airlines": [
+        "2A"
+    ],
+    "segments": [
+        {
+            "direction": "outbound",
+            "origin": {
+                "airport_code": "DAC",
+                "full_name": "Hazrat Shahjalal International Airport, Dhaka, Bangladesh",
+                "terminal": "D",
+                "departure_time": 1741267800,
+                "gmt_offset_seconds": 21600
+            },
+            "technical_stops": [],
+            "destination": {
+                "airport_code": "CXB",
+                "full_name": "Coxs Bazar, Cox's Bazar, Bangladesh",
+                "terminal": "D",
+                "arrival_time": 1741271700,
+                "gmt_offset_seconds": 21600
+            },
+            "airline": {
+                "airline_code": "2A",
+                "airline_name": "AirAstra",
+                "flight_number": "451",
+                "fare_basis": null
+            }
+        }
+    ],
+    "fare_details": [
+        {
+            "pax_type": "Adult",
+            "pax_count": 1,
+            "currency": "BDT",
+            "base_price": 5204,
+            "discount": 0,
+            "tax": 1095,
+            "other_charges": 0,
+            "sub_total_price": 6299
+        }
+    ],
+    "baggage_details": [
+        {
+            "segment": "DAC - CXB",
+            "check_in_weight": "20Kg",
+            "cabin_weight": "7Kg",
+            "pax_type": "Adult"
+        }
+    ],
+    "meta_data": {
+        "adult_quantity": 1,
+        "child_quantity": 0,
+        "child_age": 0,
+        "infant_quantity": 0,
+        "user_ip": "192.46.211.211",
+        "journey_type": "Oneway",
+        "booking_class": "Economy",
+        "gmt_offset": "+06:00",
+        "preferred_airlines": null,
+        "refundable": null,
+        "segments": [
+            {
+                "origin": "DAC",
+                "destination": "CXB",
+                "departure_date": "2025-03-06"
+            }
+        ]
+    },
+    "duration": 3900
+}
