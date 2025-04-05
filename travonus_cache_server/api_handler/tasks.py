@@ -67,7 +67,7 @@ def store_in_cache():
 
 # --------------- for updating the tokens ---------------
 schedule, _ = IntervalSchedule.objects.get_or_create(
-    every=5,
+    every=3,
     period=IntervalSchedule.DAYS,
 )
 
@@ -88,8 +88,8 @@ if not created:
 
 # --------------- for storing flight results in cache ---------------
 crontab_schedule, _ = CrontabSchedule.objects.get_or_create(
-    hour="17",
-    minute="00",
+    hour="23",
+    minute="45",
     day_of_week="*",
     day_of_month="*",
     month_of_year="*",
