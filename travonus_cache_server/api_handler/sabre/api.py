@@ -88,7 +88,7 @@ def air_search(
         ssl=False,
     )
 
-    if api_response.get("error") == "unauthorized":
+    if api_response and api_response.get("error") == "unauthorized":
         print("--------------- Sabre authentication failed ---------------")
         print("Re-authenticating...")
         authenticate()
