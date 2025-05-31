@@ -19,8 +19,14 @@ from administrator.models import MobileAdminInfo
 
 @shared_task
 def update_token():
-    flyhub_authenticate()
-    sabre_authenticate()
+    # try:
+    #     flyhub_authenticate()
+    # except Exception as e:
+    #     print(f"Flyhub authentication failed: {e}")
+    try:
+        sabre_authenticate()
+    except Exception as e:
+        print(f"Sabre authentication failed: {e}")
 
 
 @shared_task
@@ -67,7 +73,7 @@ def store_in_cache():
 
 # --------------- for updating the tokens ---------------
 schedule, _ = IntervalSchedule.objects.get_or_create(
-    every=3,
+    every=1,
     period=IntervalSchedule.DAYS,
 )
 
