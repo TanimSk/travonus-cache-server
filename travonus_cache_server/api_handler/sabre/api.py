@@ -29,7 +29,7 @@ from django.utils import timezone
 #########
 
 
-def authenticate(request):
+def authenticate(request=None):
 
     api_response = call_external_api(
         ssl=False,
@@ -87,6 +87,21 @@ def air_search(
         headers={"Authorization": f"Bearer {token}"},
         ssl=False,
     )
+
+    if api_response.get("error") == "unauthorized":
+        print("--------------- Sabre authentication failed ---------------")
+        print("Re-authenticating...")
+        authenticate()
+
+        # re-fetch the token
+        token = ApiCredentials.objects.get(api_name="sabre").token
+        api_response = call_external_api(
+            urls.AIR_SEARCH_URL,
+            method="POST",
+            data=body,
+            headers={"Authorization": f"Bearer {token}"},
+            ssl=False,
+        )
 
     return search_result_translate(
         results=api_response,

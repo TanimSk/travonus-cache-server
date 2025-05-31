@@ -86,6 +86,19 @@ def call_external_api(
             return response.text
         else:
             print("------------------ERROR-------------------\n", response.text)
+            try:
+                error_data = response.json()
+                if (
+                    error_data.get("status") == "NotProcessed"
+                    and error_data.get("type") == "Validation"
+                ):
+                    print("Validation error")
+                    return {
+                        "error": "unauthorized",
+                    }
+            except Exception as e:
+                print(f"Response is not JSON {e}")
+                return None
             return None
 
     except requests.RequestException as e:
