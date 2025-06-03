@@ -67,7 +67,7 @@ class CacheAirSearch(APIView):
             ].replace("-", "\\-")
             # now time in unix timestamp
             now_datetime = timezone.localtime(timezone.now())
-            now_unix_time = now_datetime.hour * 3600 + now_datetime.minute * 60 + now_datetime.second
+            now_unix_time = int(now_datetime.timestamp())
 
 
             query_str = (
